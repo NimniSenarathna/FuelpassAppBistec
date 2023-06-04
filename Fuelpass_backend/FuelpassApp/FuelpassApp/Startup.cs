@@ -1,9 +1,12 @@
-﻿using Microsoft.Azure.Cosmos.Fluent;
+﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos.Fluent;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using FuelpassApp;
 using System;
+using FuelpassApp.APIs;
+
 
 [assembly: FunctionsStartup(typeof(Startup))]
 
@@ -28,8 +31,22 @@ namespace FuelpassApp
                         "Please specify a valid CosmosDBConnection in the appSettings.json file or your Azure Functions Settings.");
                 }
 
-                return new CosmosClientBuilder(connectionString)
+                var cosmosClient = new CosmosClientBuilder(connectionString)
                     .Build();
+
+                return cosmosClient;
+            });
+
+            // Register FuelIssueApi
+            builder.Services.AddSingleton<FuelIssueApi>(); 
+
+            builder.Services.AddSingleton(s =>
+            {
+                var cosmosClient = s.GetRequiredService<CosmosClient>();
+                var fuelTransactionsContainer = cosmosClient.GetContainer("fuelpass-application", "FuelTransaction");
+
+                // Register the containers
+                return fuelTransactionsContainer;
             });
         }
     }
