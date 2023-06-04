@@ -21,4 +21,10 @@ namespace FuelpassApp.Models
         [JsonProperty("FuelQuota")]
         public int? FuelQuota { get; set; }
     }
+
+    public class ReduceFuelRequest
+    {
+        public string VehicleNumber { get; set; }
+        public int fuelAmount { get; set; }
+    }
 }
