@@ -15,15 +15,12 @@ namespace FuelpassApp.APIs
     public class FuelIssueApi
     {
         private readonly CosmosClient _cosmosClient;
-        private Container _registeredVehiclesContainer;
+        private readonly Container _fuelTransactionsContainer;
 
-        public FuelIssueApi()
+        public FuelIssueApi(CosmosClient cosmosClient, Container fuelTransactionsContainer)
         {
-            string cosmosDbEndpointUrl = "https://localhost:8081";
-            string cosmosDbKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
-
-            _cosmosClient = new CosmosClient(cosmosDbEndpointUrl, cosmosDbKey);
-            _registeredVehiclesContainer = _cosmosClient.GetContainer("fuelpass-application", "item");
+            _cosmosClient = cosmosClient;
+            _fuelTransactionsContainer = fuelTransactionsContainer;
         }
 
         [FunctionName("CheckVehicleRegistration")]
@@ -35,11 +32,11 @@ namespace FuelpassApp.APIs
 
             try
             {
-                // Check if the vehicle number plate exists in the 'item' container
-                var vehicleQuery = new QueryDefinition("SELECT * FROM c WHERE c.vehicleNumberPlate = @vehicleNumberPlate")
+                // Check if the vehicle number plate exists in the 'FuelTransaction' container
+                var vehicleQuery = new QueryDefinition("SELECT * FROM c WHERE c.VehicleNumber = @vehicleNumberPlate")
                     .WithParameter("@vehicleNumberPlate", vehicleNumberPlate);
 
-                var queryIterator = _registeredVehiclesContainer.GetItemQueryIterator<Vehicle>(vehicleQuery);
+                var queryIterator = _fuelTransactionsContainer.GetItemQueryIterator<Vehicle>(vehicleQuery);
                 var registeredVehicles = await queryIterator.ReadNextAsync();
 
                 if (registeredVehicles.Count > 0)
@@ -53,7 +50,6 @@ namespace FuelpassApp.APIs
                     // Vehicle number is not registered
                     return new NotFoundResult();
                 }
-
             }
             catch (CosmosException e)
             {
