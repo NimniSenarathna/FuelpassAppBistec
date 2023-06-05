@@ -16,17 +16,19 @@ namespace FuelpassApp.APIs
     {
         private readonly CosmosClient _cosmosClient;
         private readonly Container _fuelTransactionsContainer;
+        private readonly Container _vehicleFuelQuotaContainer;
 
-        public FuelIssueApi(CosmosClient cosmosClient, Container fuelTransactionsContainer)
+        public FuelIssueApi(CosmosClient cosmosClient, Container fuelTransactionsContainer, Container vehicleFuelQuotaContainer)
         {
             _cosmosClient = cosmosClient;
             _fuelTransactionsContainer = fuelTransactionsContainer;
+            _vehicleFuelQuotaContainer = vehicleFuelQuotaContainer;
         }
 
         [FunctionName("CheckVehicleRegistration")]
         public async Task<IActionResult> CheckVehicleRegistration(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "vehiclenumber/{vehicleNumberPlate}")]
-        HttpRequest req, ILogger log, string vehicleNumberPlate)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "vehiclenumber/{vehicleNumberPlate}")]
+            HttpRequest req, ILogger log, string vehicleNumberPlate)
         {
             log.LogInformation($"Checking vehicle registration for fuel issue. Vehicle number plate: {vehicleNumberPlate}");
 
@@ -59,12 +61,53 @@ namespace FuelpassApp.APIs
         }
 
 
-        //--- Function to reduce the fuel quota ---
+        [FunctionName("GetRemainingQuota")]
+        public async Task<IActionResult> GetRemainingQuota(
+          [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "FuelApi/GetRemainingQuota/{vehicleNumberPlate}")]
+          HttpRequest req, ILogger log, string vehicleNumberPlate)
+        {
+            log.LogInformation($"Getting remaining quota for vehicle: {vehicleNumberPlate}");
+
+            try
+            {
+                // Check if the vehicle number plate exists in the 'FuelTransaction' container
+                var vehicleQuery = new QueryDefinition("SELECT * FROM c WHERE c.VehicleNumber = @vehicleNumberPlate")
+                    .WithParameter("@vehicleNumberPlate", vehicleNumberPlate);
+
+                var queryIterator = _fuelTransactionsContainer.GetItemQueryIterator<dynamic>(vehicleQuery);
+                var fuelTransactions = await queryIterator.ReadNextAsync();
+
+                //debug
+                log.LogInformation(JsonConvert.SerializeObject(fuelTransactions));
+
+                if (fuelTransactions.Count > 0)
+                {
+                    // Vehicle number is registered
+                    var fuelTransaction = fuelTransactions.First();
+                    double remainingQuota = fuelTransaction.FuelQuota;
+
+                    return new OkObjectResult(remainingQuota);
+                }
+                else
+                {
+                    // Vehicle number is not registered
+                    return new NotFoundResult();
+                }
+            }
+            catch (CosmosException e)
+            {
+                log.LogError($"Error occurred while getting remaining quota: {e.Message}");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+
+
 
         [FunctionName("ReduceFuelQuota")]
         public async Task<IActionResult> ReduceFuelQuota(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "reducefuel/{id}/{fuelAmount}")] 
-             HttpRequest req, ILogger log, string Id, int fuelAmount)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "reducefuel/{id}/{fuelAmount}")]
+            HttpRequest req, ILogger log, string id, int fuelAmount)
         {
             log.LogInformation("Reducing fuel quota.");
 
@@ -80,11 +123,11 @@ namespace FuelpassApp.APIs
                 var queryIterator = _fuelTransactionsContainer.GetItemQueryIterator<FuelTransaction>(fuelTransactionQuery);
                 var fuelTransactions = await queryIterator.ReadNextAsync();
 
+
                 if (fuelTransactions.Count == 0)
                 {
                     // Vehicle number is not registered
                     return new NotFoundResult();
-
                 }
 
                 var fuelTransaction = fuelTransactions.First();
@@ -108,13 +151,11 @@ namespace FuelpassApp.APIs
 
                 return new OkObjectResult(response.Resource);
             }
-
             catch (CosmosException e)
             {
                 log.LogError($"Error occurred while reducing fuel quota: {e.Message}");
                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
-
     }
 }

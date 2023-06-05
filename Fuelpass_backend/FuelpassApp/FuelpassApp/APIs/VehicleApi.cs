@@ -34,9 +34,8 @@ namespace FuelpassApp.APIs
 
 
         public async Task<IActionResult> CreateVehicle(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Vehicle")] HttpRequest req,
-
-            ILogger log)
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Vehicle")] HttpRequest req,
+        ILogger log)
         {
             log.LogInformation("Creating Register page Items");
             string requestData = await new StreamReader(req.Body).ReadToEndAsync();
@@ -80,7 +79,7 @@ namespace FuelpassApp.APIs
             await _fuelTransactionContainer.CreateItemAsync(fuelTransaction, new PartitionKey(fuelTransaction.Id));
 
             return new OkObjectResult(vehicle);
-
         }
+
     }
 }

@@ -44,6 +44,7 @@ namespace FuelpassApp
             {
                 var cosmosClient = s.GetRequiredService<CosmosClient>();
                 var fuelTransactionsContainer = cosmosClient.GetContainer("fuelpass-application", "FuelTransaction");
+                var vehicleFuelQuotaContainer = cosmosClient.GetContainer("fuelpass-application", "VehicleFuelQuota");
 
                 // Register the containers
                 return fuelTransactionsContainer;

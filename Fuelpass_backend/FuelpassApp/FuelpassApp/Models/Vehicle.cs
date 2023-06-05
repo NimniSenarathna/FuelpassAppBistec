@@ -20,7 +20,8 @@ namespace FuelpassApp.Models
         public string vehicleChassisNumber { get; set; }
         public string fuelType { get; set; }
         public string vehicleNumberPlate { get; set; }
-        
+        public int TotalWeeklyQuota { get; set; }
+
     }
 
     public class CreateVehicle
@@ -32,5 +33,6 @@ namespace FuelpassApp.Models
         public string vehicleChassisNumber { get; set; }
         public string fuelType { get; set; }
         public string vehicleNumberPlate { get; set; }
+        public int TotalWeeklyQuota { get; set; }
     }
 }
