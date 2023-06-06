@@ -32,7 +32,6 @@ namespace FuelpassApp.APIs
 
         [FunctionName("Vehicle")]
 
-
         public async Task<IActionResult> CreateVehicle(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "Vehicle")] HttpRequest req,
         ILogger log)

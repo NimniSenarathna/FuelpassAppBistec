@@ -9,6 +9,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using FuelpassApp.Models;
 using System.Linq;
+using Microsoft.AspNetCore.Routing;
+using System.Collections.Generic;
 
 namespace FuelpassApp.APIs
 {
@@ -17,6 +19,7 @@ namespace FuelpassApp.APIs
         private readonly CosmosClient _cosmosClient;
         private readonly Container _fuelTransactionsContainer;
         private readonly Container _vehicleFuelQuotaContainer;
+      
 
         public FuelIssueApi(CosmosClient cosmosClient, Container fuelTransactionsContainer, Container vehicleFuelQuotaContainer)
         {
@@ -24,6 +27,8 @@ namespace FuelpassApp.APIs
             _fuelTransactionsContainer = fuelTransactionsContainer;
             _vehicleFuelQuotaContainer = vehicleFuelQuotaContainer;
         }
+
+        static List<FuelTransaction> fuelTransactionList = new();
 
         [FunctionName("CheckVehicleRegistration")]
         public async Task<IActionResult> CheckVehicleRegistration(
@@ -102,27 +107,21 @@ namespace FuelpassApp.APIs
         }
 
 
-
-
-        [FunctionName("ReduceFuelQuota")]
-        public async Task<IActionResult> ReduceFuelQuota(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "reducefuel/{id}/{fuelAmount}")]
-            HttpRequest req, ILogger log, string id, int fuelAmount)
+        [FunctionName("ReduceFuelQuotaFunction")]
+        public async Task<IActionResult> ReduceFuelQuotaFunction(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "ReduceFuelQuota/{vehicleNumberPlate}")]
+            HttpRequest req, ILogger log, string vehicleNumberPlate)
         {
             log.LogInformation("Reducing fuel quota.");
 
             try
             {
-                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-                var data = JsonConvert.DeserializeObject<ReduceFuelRequest>(requestBody);
-
                 // Retrieve the fuel transaction based on the vehicle number plate
                 var fuelTransactionQuery = new QueryDefinition("SELECT * FROM c WHERE c.VehicleNumber = @vehicleNumberPlate")
-                    .WithParameter("@vehicleNumberPlate", data.VehicleNumber);
+                    .WithParameter("@vehicleNumberPlate", vehicleNumberPlate);
 
                 var queryIterator = _fuelTransactionsContainer.GetItemQueryIterator<FuelTransaction>(fuelTransactionQuery);
                 var fuelTransactions = await queryIterator.ReadNextAsync();
-
 
                 if (fuelTransactions.Count == 0)
                 {
@@ -134,18 +133,26 @@ namespace FuelpassApp.APIs
 
                 if (fuelTransaction.FuelQuota == null)
                 {
-                    // Fuel quota is not set for the vehicle
                     return new BadRequestObjectResult("Fuel quota is not set for the vehicle.");
                 }
 
-                if (data.fuelAmount > fuelTransaction.FuelQuota)
+                // Read the payload from the request body
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                dynamic data = JsonConvert.DeserializeObject(requestBody);
+                double reductionAmount = data?.reductionAmount;
+
+                if (reductionAmount == null || reductionAmount <= 0)
                 {
-                    // Fuel amount exceeds the remaining fuel quota
-                    return new BadRequestObjectResult("Fuel amount exceeds the remaining fuel quota.");
+                    return new BadRequestObjectResult("Invalid reduction amount.");
                 }
 
-                // Reduce the fuel quota and update the fuel transaction
-                fuelTransaction.FuelQuota -= data.fuelAmount;
+                if (fuelTransaction.FuelQuota < reductionAmount)
+                {
+                    return new BadRequestObjectResult("Reduction amount exceeds the available fuel quota.");
+                }
+
+                // Reduce the fuel quota by the consuming amount
+                fuelTransaction.FuelQuota -= reductionAmount;
 
                 var response = await _fuelTransactionsContainer.ReplaceItemAsync(fuelTransaction, fuelTransaction.Id);
 
@@ -159,3 +166,4 @@ namespace FuelpassApp.APIs
         }
     }
 }
+
