@@ -1,0 +1,108 @@
+.issue-fuel-container {
+  width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f7f7f7;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 160px;
+}
+
+.issue-fuel-title {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 60px;
+}
+
+.registration-status {
+  margin-bottom: 20px;
+}
+
+label {
+  font-weight: bold;
+  margin-right: 5px;
+  color: #333;
+}
+
+input[type='text'] {
+  width: 200px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 6px 12.5px;
+  background-color: #fbbd08;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 5px;
+  margin-left: 12px;
+}
+
+button:hover {
+  background-color: #f39c12;
+}
+
+.vehicle-details {
+  margin-top: 20px;
+}
+
+.vehicle-details p {
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.fuel-issue-form {
+  margin-top: 45px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.form-label {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.submit-button {
+  padding: 10px 20px;
+  background-color: #fbbd08;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submit-button:hover {
+  background-color: #f39c12;
+}
+
+.check-vehicle-button {
+  padding: 6px 12px;
+  background-color: #fbbd08;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+.check-vehicle-button:hover {
+  background-color: #f39c12;
+}
